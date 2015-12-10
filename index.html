@@ -1,0 +1,326 @@
+<!doctype html>
+<head>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/raphael/2.1.2/raphael-min.js"></script>
+  <script src="morris.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/prettify/r224/prettify.min.js"></script>
+  <script src="lib/example.js"></script>
+  <script src="lib/jquery-ui.js"></script>
+  <link rel="stylesheet" href="lib/example.css">
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/prettify/r224/prettify.min.css">
+  <link rel="stylesheet" href="morris.css">
+  <link rel="stylesheet" href="lib/jquery-ui.theme.css">
+  <link rel="stylesheet" href="lib/jquery-ui.css">
+  
+
+  
+</head>
+<body>
+
+<h1>Updating data</h1>   
+
+<?php
+
+  $cnx1 = mysql_connect( "localhost","cliardui_npr4","wasaraetu314" ) ;
+ 
+  $db1  = mysql_select_db( "cliardui_npr4", $cnx1 ) ;
+
+  $sql1=mysql_query("SELECT count(*) FROM client");
+  while($row1=mysql_fetch_assoc($sql1)){
+  $output1[]=$row1;
+  $out1 = $output1[0];
+  }
+  $cnt1=$out1['count(*)'];
+  $sql2=mysql_query("SELECT * FROM client");
+  while($row2=mysql_fetch_assoc($sql2)){
+  $output2[]=$row2;
+  $out2 = $output2[0];
+  }
+  $x2 = json_encode($output2);
+  mysql_close();
+?>
+
+<script>var selectedcli;</script>
+
+
+          <form action="#" method="get">
+ 
+            <label for="idcli">Select id :</label>
+            <select name="idcli" id="idcli" onchange="selectionChanged()">
+            <?php
+               for($i = 0; $i < $cnt1; $i++)
+                  echo("<option value=\"".$output2[$i]['id_client']."\">".$output2[$i]['nom_cli']." ".$output2[$i]['prenom_cli']."</option>");
+            ?>
+            </select> 
+            </form>        
+
+<p id="demo"></p>              
+<div id="graph"></div>
+<div id="reloadStatus">
+<pre id="code" class="prettyprint linenums">
+<script>
+
+
+  var c = 0;
+  var ret = [];
+  var xhttp;
+  var initcount;
+  var res = "";
+  var firstcount = 0;
+  var getcnt;
+  var ans;
+  var tab = [];
+  var getcount;
+  var updatedCnt = 0;
+  var graph;
+
+function initialisation(){
+
+   selectedcli = document.getElementById("idcli").value;
+
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+
+            getcnt = parseInt(xhttp.responseText);
+  
+    }
+    };
+  xhttp.open("GET", "count.php?id=" + selectedcli, false);
+  xhttp.send();
+
+
+getcount = getcnt;
+firstcount = getcount;
+initcount = getcount;
+
+
+  for (var nb = 0; nb <= 10; nb += 1) {
+  
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+
+            res = xhttp.responseText;
+            var dateAffich = res.substring(0, res.indexOf("|"));
+            var dateSec = res.substring(res.indexOf("|") + 1, res.lastIndexOf("|"));
+            var temp = res.substring(res.lastIndexOf("|") + 1, res.indexOf("*"));
+            var hum = res.substring(res.indexOf("*") + 1, res.length);
+            document.getElementById("reloadStatus").innerHTML = dateAffich + "*" + dateSec + "*" + temp + "*" + hum;
+            
+            if(isNaN(parseInt(temp)))
+              temp = 0;
+            if(isNaN(parseInt(hum)))
+              hum = 0;
+            
+    ret.push({
+       x: nb,
+       y: parseInt(temp),
+       z: parseInt(hum),
+       date: String(dateAffich)
+    });
+  
+    }
+    };
+  xhttp.open("GET", "getdata.php?it=" + (nb + getcount - 10) + "&id=" + selectedcli, false);
+  xhttp.send();
+  }
+  
+
+
+}
+initialisation();
+
+
+    
+  graph = Morris.Area({
+    element: 'graph',
+    data: ret,
+    xkey: 'x',
+    ykeys: ['y', 'z'],
+    labels: ['valeur', 'date', 'y'],
+    parseTime: false,
+    ymin: 0.0,
+    ymax: 500.0,
+    hideHover: false,
+    behaveLikeLine: true,
+    lineColors: ['red', 'blue'],
+    fillOpacity: 0.4,
+    hoverCallback: function (index, options, content, row) {
+       return "Date : " + row.date + "\nTemperature : " + row.y + "\nHumidite : " + row.z;
+    }
+});
+
+function selectionChanged(){
+
+   
+   c = 0;
+   ret = [];
+   xhttp;
+   initcount;
+   res = "";
+   firstcount = 0;
+   getcnt;
+   ans;
+   tab = [];
+   getcount;
+   updatedCnt = 0;
+   
+   document.getElementById("graph").innerHTML = "";
+   initialisation();
+   
+    
+    graph = Morris.Area({
+    element: 'graph',
+    data: ret,
+    xkey: 'x',
+    ykeys: ['y', 'z'],
+    labels: ['valeur', 'date', 'y'],
+    parseTime: false,
+    ymin: 0.0,
+    ymax: 500.0,
+    hideHover: false,
+    behaveLikeLine: true,
+    lineColors: ['red', 'blue'],
+    fillOpacity: 0.4,
+    hoverCallback: function (index, options, content, row) {
+       return "Date : " + row.date + "\nTemperature : " + row.y + "\nHumidite : " + row.z;
+    }
+});
+
+
+function checkdata(){
+tab = [];
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+            
+            updatedCnt = parseInt(xhttp.responseText);
+            
+            if(parseInt(getcount) < parseInt(updatedCnt)){
+            c=0;
+            update();
+            }
+ 
+  
+    }
+    };
+  xhttp.open("GET", "count.php?id=" + selectedcli, false);
+  xhttp.send();
+  
+}
+
+
+function update() {
+
+  c++;
+  for (var nb = 0; nb <= 10; nb += 1) {
+  
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+
+            ans = xhttp.responseText;
+            document.getElementById("demo").innerHTML = ans;
+            var dateAffich = ans.substring(0, ans.indexOf("|"));
+            var dateSec = ans.substring(ans.indexOf("|") + 1, ans.lastIndexOf("|"));
+            var temp = ans.substring(ans.lastIndexOf("|") + 1, ans.indexOf("*"));
+            var hum = ans.substring(ans.indexOf("*") + 1, ans.length);
+            document.getElementById("reloadStatus").innerHTML = dateAffich + "*" + dateSec + "*" + temp + "*" + hum + " nextcount : " + updatedCnt + " getcount : " + getcount;
+ 
+            if(isNaN(parseInt(temp)))
+              temp = 0;
+            if(isNaN(parseInt(hum)))
+              hum = 0;
+            
+    tab.push({
+       x: nb,
+       y: parseInt(temp),
+       z: parseInt(hum),
+       date: String(dateAffich)
+    });
+    
+    
+    }
+    };
+  xhttp.open("GET", "getdata.php?it=" + (nb + getcount + c - 10) + "&id=" + selectedcli, false);
+  xhttp.send();
+  }
+  
+  getcount = parseInt(updatedCnt);
+  graph.setData(tab);
+  
+}
+
+//setInterval(checkdata, 2000);
+}
+
+function checkdata(){
+tab = [];
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+            
+            updatedCnt = parseInt(xhttp.responseText);
+            
+            if(parseInt(getcount) < parseInt(updatedCnt)){
+            c=0;
+            update();
+            }
+ 
+  
+    }
+    };
+  xhttp.open("GET", "count.php?id=" + selectedcli, false);
+  xhttp.send();
+  
+}
+
+
+function update() {
+
+  c++;
+  for (var nb = 0; nb <= 10; nb += 1) {
+  
+  xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (xhttp.readyState == 4 && xhttp.status == 200) {
+
+            ans = xhttp.responseText;
+            document.getElementById("demo").innerHTML = ans;
+            var dateAffich = ans.substring(0, ans.indexOf("|"));
+            var dateSec = ans.substring(ans.indexOf("|") + 1, ans.lastIndexOf("|"));
+            var temp = ans.substring(ans.lastIndexOf("|") + 1, ans.indexOf("*"));
+            var hum = ans.substring(ans.indexOf("*") + 1, ans.length);
+            document.getElementById("reloadStatus").innerHTML = dateAffich + "*" + dateSec + "*" + temp + "*" + hum + " nextcount : " + updatedCnt + " getcount : " + getcount;
+ 
+            if(isNaN(parseInt(temp)))
+              temp = 0;
+            if(isNaN(parseInt(hum)))
+              hum = 0;
+            
+    tab.push({
+       x: nb,
+       y: parseInt(temp),
+       z: parseInt(hum),
+       date: String(dateAffich)
+    });
+    
+    
+    }
+    };
+  xhttp.open("GET", "getdata.php?it=" + (nb + getcount + c - 10) + "&id=" + selectedcli, false);
+  xhttp.send();
+  }
+  
+  getcount = parseInt(updatedCnt);
+  
+  graph.setData(tab);
+  
+}
+
+setInterval(checkdata, 2000);
+
+</script>
+</pre>
+</body>
